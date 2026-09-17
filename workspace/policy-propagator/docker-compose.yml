@@ -1,0 +1,57 @@
+services:
+  control:
+    build:
+      context: .
+      dockerfile: Dockerfile.control
+    ports:
+      - "8080:8080"
+    volumes:
+      - control-data:/data
+    healthcheck:
+      test: ["CMD", "python3", "-c",
+             "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8080/health').status==200 else 1)"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  edge-eu-1:
+    build:
+      context: .
+      dockerfile: Dockerfile.edge
+    environment:
+      NODE_ID: edge-eu-1
+      REGION: eu
+    ports: ["9001:9000"]
+    volumes:
+      - edge-eu-1-data:/data
+    depends_on: [control]
+
+  edge-us-1:
+    build:
+      context: .
+      dockerfile: Dockerfile.edge
+    environment:
+      NODE_ID: edge-us-1
+      REGION: us
+    ports: ["9002:9000"]
+    volumes:
+      - edge-us-1-data:/data
+    depends_on: [control]
+
+  edge-apac-1:
+    build:
+      context: .
+      dockerfile: Dockerfile.edge
+    environment:
+      NODE_ID: edge-apac-1
+      REGION: apac
+    ports: ["9003:9000"]
+    volumes:
+      - edge-apac-1-data:/data
+    depends_on: [control]
+
+volumes:
+  control-data:
+  edge-eu-1-data:
+  edge-us-1-data:
+  edge-apac-1-data:

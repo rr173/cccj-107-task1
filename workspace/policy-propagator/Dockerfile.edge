@@ -1,0 +1,15 @@
+# Edge-node image. Admin port (9000) is for demos/tests: sever the link,
+# freeze processing, inject raw receipts.
+FROM python:3.11-slim
+
+WORKDIR /opt/pp
+COPY edge ./edge
+
+ENV STATE_DIR=/data \
+    CONTROL_URL=http://control:8080 \
+    POLL_INTERVAL=2
+
+EXPOSE 9000
+VOLUME ["/data"]
+
+CMD ["python3", "-m", "edge.agent"]

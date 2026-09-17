@@ -1,0 +1,15 @@
+# Pure-stdlib Python image: no pip install, builds offline.
+FROM python:3.11-slim
+
+WORKDIR /opt/pp
+COPY app ./app
+COPY edge ./edge
+
+ENV PP_DB=/data/control.db \
+    PP_BLOB_DIR=/data/blobs \
+    PP_PORT=8080
+
+EXPOSE 8080
+VOLUME ["/data"]
+
+CMD ["python3", "-m", "app.main"]
