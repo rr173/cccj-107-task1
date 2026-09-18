@@ -1,0 +1,85 @@
+services:
+  controller:
+    build: .
+    image: policy-propagator:latest
+    environment:
+      SIGNING_SECRET: ${SIGNING_SECRET:-shared-demo-secret}
+      CONTROLLER_DB: /data/controller.db
+    ports:
+      - "8080:8080"
+    volumes:
+      - controller-data:/data
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8080/healthz', timeout=2).status==200 else 1)"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  edge-cn:
+    image: policy-propagator:latest
+    command: ["python3", "/app/agent.py", "--id", "edge-cn", "--region", "cn"]
+    environment:
+      CONTROLLER_URL: http://controller:8080
+      SIGNING_SECRET: ${SIGNING_SECRET:-shared-demo-secret}
+      STATE_FILE: /data/agent.json
+      POLL_INTERVAL: "2"
+    volumes:
+      - edge-cn-data:/data
+    depends_on:
+      controller:
+        condition: service_healthy
+    restart: unless-stopped
+
+  edge-eu:
+    image: policy-propagator:latest
+    command: ["python3", "/app/agent.py", "--id", "edge-eu", "--region", "eu"]
+    environment:
+      CONTROLLER_URL: http://controller:8080
+      SIGNING_SECRET: ${SIGNING_SECRET:-shared-demo-secret}
+      STATE_FILE: /data/agent.json
+      POLL_INTERVAL: "2"
+    volumes:
+      - edge-eu-data:/data
+    depends_on:
+      controller:
+        condition: service_healthy
+    restart: unless-stopped
+
+  edge-us:
+    image: policy-propagator:latest
+    command: ["python3", "/app/agent.py", "--id", "edge-us", "--region", "us"]
+    environment:
+      CONTROLLER_URL: http://controller:8080
+      SIGNING_SECRET: ${SIGNING_SECRET:-shared-demo-secret}
+      STATE_FILE: /data/agent.json
+      POLL_INTERVAL: "2"
+    volumes:
+      - edge-us-data:/data
+    depends_on:
+      controller:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # 长离线节点：演示中晚启动，验证重连时拿到完整安全链而非最新快照。
+  # 默认不随 up 启动，由 demo.sh 在最后一步显式 docker compose up 拉起。
+  edge-late-cn:
+    image: policy-propagator:latest
+    profiles: ["late"]
+    command: ["python3", "/app/agent.py", "--id", "edge-late-cn", "--region", "cn"]
+    environment:
+      CONTROLLER_URL: http://controller:8080
+      SIGNING_SECRET: ${SIGNING_SECRET:-shared-demo-secret}
+      STATE_FILE: /data/agent.json
+      POLL_INTERVAL: "2"
+    volumes:
+      - edge-late-data:/data
+    depends_on:
+      controller:
+        condition: service_healthy
+
+volumes:
+  controller-data:
+  edge-cn-data:
+  edge-eu-data:
+  edge-us-data:
+  edge-late-data:
